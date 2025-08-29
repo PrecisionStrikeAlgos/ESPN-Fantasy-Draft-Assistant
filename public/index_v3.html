@@ -1,0 +1,2622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Miami Dolphins Fantasy Draft Assistant</title>
+    <style>
+        :root {
+            /* Miami Dolphins Official Colors */
+            --dolphins-aqua: #008E97;
+            --dolphins-aqua-dark: #005778;
+            --dolphins-orange: #FC4C02;
+            --dolphins-orange-dark: #D63900;
+            --white: #FFFFFF;
+            --black: #000000;
+            --dark-bg: #001419;
+            --card-bg: #002329;
+            --border-color: #008E97;
+            --text-primary: #FFFFFF;
+            --text-secondary: #B0E0E6;
+            --hover-bg: #003D42;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* Remove number input spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-rows: auto 1fr;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--dolphins-aqua), var(--dolphins-aqua-dark));
+            padding: 1rem 2rem;
+            border-bottom: 3px solid var(--dolphins-orange);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .header-logo {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+            max-width: 50px;
+            max-height: 50px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            text-align: center;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            color: var(--white);
+        }
+
+        /* Setup Screens */
+        .setup-screen {
+            display: none;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 0 20px rgba(0, 142, 151, 0.3);
+        }
+
+        .setup-screen.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dolphins-orange);
+            font-weight: 600;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--dolphins-orange);
+            box-shadow: 0 0 0 3px rgba(252, 76, 2, 0.2);
+        }
+
+        /* HUD-Style Buttons */
+        .btn {
+            background: transparent;
+            color: var(--dolphins-aqua);
+            border: 2px solid var(--dolphins-aqua);
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            text-transform: uppercase;
+        }
+
+        .btn:hover {
+            background: var(--dolphins-aqua);
+            color: var(--white);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 142, 151, 0.4);
+        }
+
+        .btn:disabled {
+            border-color: #666;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn.primary {
+            background: var(--dolphins-orange);
+            border-color: var(--dolphins-orange);
+            color: var(--white);
+        }
+
+        .btn.primary:hover {
+            background: var(--dolphins-orange-dark);
+            border-color: var(--dolphins-orange-dark);
+        }
+
+        .btn.secondary {
+            border-color: var(--dolphins-orange);
+            color: var(--dolphins-orange);
+        }
+
+        .btn.secondary:hover {
+            background: var(--dolphins-orange);
+            color: var(--white);
+        }
+
+        .team-setup {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .team-input {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.8rem;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .football-emoji {
+            font-size: 1.2rem;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        /* Main Draft Interface */
+        .draft-interface {
+            display: none;
+            grid-template-rows: auto 1fr auto;
+            height: calc(100vh - 80px);
+        }
+
+        .draft-interface.active {
+            display: grid;
+        }
+
+        .draft-controls {
+            background: var(--card-bg);
+            padding: 1rem 2rem;
+            border-bottom: 2px solid var(--border-color);
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .timer-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .draft-status {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .timer {
+            background: var(--dolphins-orange);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-width: 80px;
+            text-align: center;
+            border: 2px solid var(--dolphins-orange);
+        }
+
+        .timer.paused {
+            background: transparent;
+            border-color: #666;
+            color: #666;
+        }
+
+        .current-pick {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dolphins-orange);
+        }
+
+        .current-team {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Content Layout */
+        .main-content {
+            display: grid;
+            grid-template-rows: auto auto;
+            gap: 1rem;
+            padding: 1rem;
+            min-height: calc(100vh - 140px);
+        }
+
+        .top-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+            height: 500px;
+        }
+
+        .bottom-section {
+            width: 100%;
+            min-height: auto;
+        }
+
+        /* Player Pool */
+        .player-pool {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            box-shadow: 0 0 15px rgba(0, 142, 151, 0.2);
+        }
+
+        .player-pool-header {
+            background: linear-gradient(135deg, var(--dolphins-aqua), var(--dolphins-aqua-dark));
+            padding: 1rem;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .search-container {
+            margin-top: 1rem;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.8rem;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-box:focus {
+            border-color: var(--dolphins-orange);
+            outline: none;
+        }
+
+        .position-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .position-tab {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 142, 151, 0.2);
+            border: 2px solid var(--dolphins-aqua);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .position-tab.active {
+            background: var(--dolphins-orange);
+            border-color: var(--dolphins-orange);
+            color: var(--white);
+            box-shadow: 0 0 10px rgba(252, 76, 2, 0.4);
+        }
+
+        .position-tab:hover {
+            background: var(--dolphins-aqua);
+            color: var(--white);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 142, 151, 0.3);
+        }
+
+        .players-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            max-height: 400px;
+        }
+
+        .player-card {
+            background: var(--hover-bg);
+            margin-bottom: 0.8rem;
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid var(--dolphins-aqua);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .player-card:hover {
+            background: var(--border-color);
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0, 142, 151, 0.3);
+        }
+
+        .player-card.drafted {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .player-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .player-info {
+            font-weight: bold;
+            font-size: 1rem;
+            color: var(--white);
+        }
+
+        .player-stats {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .draft-player-btn {
+            background: transparent;
+            color: var(--dolphins-orange);
+            border: 2px solid var(--dolphins-orange);
+            padding: 0.4rem 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .draft-player-btn:hover {
+            background: var(--dolphins-orange);
+            color: var(--white);
+        }
+
+        .draft-player-btn:disabled {
+            border-color: #666;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        /* AI Recommendations Panel */
+        .ai-recommendations {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--dolphins-orange);
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(252, 76, 2, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ai-header {
+            background: linear-gradient(135deg, var(--dolphins-orange), var(--dolphins-orange-dark));
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ai-header h3 {
+            color: var(--white);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+
+        .ai-status {
+            background: rgba(255,255,255,0.2);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            color: var(--white);
+        }
+
+        .ai-content {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .ai-pick {
+            background: var(--hover-bg);
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            border-left: 4px solid transparent;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            border: 1px solid var(--border-color);
+        }
+
+        .ai-pick.must-draft {
+            border-left-color: var(--dolphins-orange);
+            background: rgba(252, 76, 2, 0.1);
+        }
+
+        .ai-pick.good-value {
+            border-left-color: var(--dolphins-aqua);
+            background: rgba(0, 142, 151, 0.1);
+        }
+
+        .ai-pick:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 142, 151, 0.3);
+        }
+
+        .ai-pick-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.3rem;
+        }
+
+        .ai-pick-name {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: var(--white);
+        }
+
+        .ai-pick-badge {
+            padding: 0.2rem 0.5rem;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        .ai-pick-badge.must-draft {
+            background: var(--dolphins-orange);
+            color: var(--white);
+        }
+
+        .ai-pick-badge.good-value {
+            background: var(--dolphins-aqua);
+            color: var(--white);
+        }
+
+        .ai-pick-reason {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.3;
+        }
+
+        .ai-pick-stats {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
+        .draft-insights {
+            border-top: 1px solid var(--border-color);
+            padding-top: 1rem;
+        }
+
+        .insight-item {
+            background: var(--hover-bg);
+            padding: 0.6rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            border-left: 3px solid var(--dolphins-aqua);
+            border: 1px solid var(--border-color);
+        }
+
+        .insight-item.alert {
+            border-left-color: var(--dolphins-orange);
+            background: rgba(252, 76, 2, 0.1);
+        }
+
+        .insight-item.opportunity {
+            border-left-color: var(--dolphins-aqua);
+            background: rgba(0, 142, 151, 0.1);
+        }
+
+        /* My Team Roster */
+        .my-team {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0, 142, 151, 0.2);
+        }
+
+        .my-team-header {
+            background: linear-gradient(135deg, var(--dolphins-aqua), var(--dolphins-aqua-dark));
+            padding: 1rem;
+            border-radius: 10px 10px 0 0;
+            text-align: center;
+        }
+
+        .my-team-content {
+            padding: 1rem;
+            flex: 1;
+            overflow-y: auto;
+            max-height: 400px;
+        }
+
+        .lineup-slot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            background: var(--hover-bg);
+            border-radius: 8px;
+            border-left: 4px solid var(--dolphins-aqua);
+            border: 1px solid var(--border-color);
+        }
+
+        .lineup-slot.filled {
+            border-left-color: var(--dolphins-orange);
+        }
+
+        .slot-position {
+            font-weight: bold;
+            color: var(--dolphins-orange);
+            min-width: 60px;
+        }
+
+        .slot-player {
+            flex: 1;
+            margin-left: 1rem;
+            color: var(--white);
+        }
+
+        .slot-player.empty {
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        .bench-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .bench-title {
+            font-weight: bold;
+            color: var(--dolphins-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .bench-player {
+            padding: 0.5rem;
+            margin-bottom: 0.3rem;
+            background: var(--hover-bg);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+            color: var(--white);
+        }
+
+        /* Draft Board with Background */
+        .draft-board-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            border: 2px solid var(--border-color);
+            overflow: visible;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 15px rgba(0, 142, 151, 0.2);
+            position: relative;
+        }
+
+        .draft-board-header {
+            background: linear-gradient(135deg, var(--dolphins-aqua), var(--dolphins-aqua-dark));
+            padding: 1rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            border-radius: 10px 10px 0 0;
+            color: var(--white);
+        }
+
+        .draft-board {
+            padding: 1rem;
+            overflow: visible;
+            position: relative;
+        }
+
+        .draft-board-with-dolphins {
+            border-radius: 8px;
+        }
+
+        .draft-grid {
+            display: grid;
+            grid-template-columns: 60px repeat(var(--team-count, 10), 1fr);
+            gap: 2px;
+            min-width: fit-content;
+            position: relative;
+            border-radius: 8px;
+        }
+
+        /* Put dolphins overlay directly on the grid */
+        .draft-grid::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: url('./images/dolphins-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.20;
+            border-radius: 8px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .round-header, .team-header {
+            background: var(--dolphins-aqua);
+            padding: 0.5rem;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            border-radius: 4px;
+            color: var(--white);
+            border: 1px solid var(--border-color);
+        }
+
+        .draft-slot {
+            background: var(--hover-bg);
+            border: 2px solid var(--border-color);
+            min-height: 60px;
+            padding: 0.5rem;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.8rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            color: var(--white);
+        }
+
+        .draft-slot.current {
+            background: var(--dolphins-orange);
+            color: var(--white);
+            box-shadow: 0 0 10px rgba(252, 76, 2, 0.5);
+            animation: pulse 2s infinite;
+            border-color: var(--dolphins-orange);
+        }
+
+        .draft-slot.filled {
+            background: var(--dolphins-aqua);
+            color: var(--white);
+            border-color: var(--dolphins-aqua);
+        }
+
+        .draft-slot.my-pick {
+            border: 3px solid var(--dolphins-orange);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .player-name {
+            font-weight: bold;
+            margin-bottom: 0.2rem;
+        }
+
+        .player-details {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+
+        /* Draft Complete Overlay */
+        .draft-complete-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .draft-complete-modal {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 2px solid var(--dolphins-orange);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .draft-complete-title {
+            font-size: 2rem;
+            color: var(--dolphins-orange);
+            margin-bottom: 1rem;
+        }
+
+        .draft-complete-message {
+            margin-bottom: 2rem;
+            line-height: 1.5;
+            color: var(--white);
+        }
+
+        .status-message {
+            margin: 1rem 0;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .status-success {
+            background: rgba(0, 142, 151, 0.2);
+            border: 2px solid var(--dolphins-aqua);
+            color: var(--dolphins-aqua);
+        }
+
+        .status-error {
+            background: rgba(252, 76, 2, 0.2);
+            border: 2px solid var(--dolphins-orange);
+            color: var(--dolphins-orange);
+        }
+
+        .status-loading {
+            background: rgba(0, 142, 151, 0.2);
+            border: 2px solid var(--dolphins-aqua);
+            color: var(--dolphins-aqua);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .top-section {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: 1fr 1fr;
+            }
+            
+            .my-team {
+                grid-column: 1 / -1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-section {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+            }
+            
+            .draft-controls {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .team-setup {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 142, 151, 0.3);
+            border-radius: 50%;
+            border-top-color: var(--dolphins-aqua);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <div class="header">
+            <img src="./images/miami-dolphins-1.svg" alt="Miami Dolphins" class="header-logo">
+            <h1 id="headerTitle">Fantasy Draft Assistant</h1>
+        </div>
+
+        <!-- ESPN Connection Screen -->
+        <div class="setup-screen active" id="connectionScreen">
+            <h2 style="margin-bottom: 2rem; text-align: center; color: var(--dolphins-orange);">ESPN League Connection</h2>
+            
+            <div class="form-group">
+                <label for="leagueId">ESPN League ID *</label>
+                <input type="number" id="leagueId" placeholder="Enter your League ID" required>
+                <small style="color: var(--text-secondary); font-size: 0.8rem;">Find this in your ESPN league URL</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="seasonId">Season Year *</label>
+                <input type="number" id="seasonId" value="2025" required>
+            </div>
+
+            <div class="form-group">
+                <label for="espnS2">ESPN_S2 Cookie (Private Leagues)</label>
+                <input type="password" id="espnS2" placeholder="Optional - for private leagues">
+                <small style="color: var(--text-secondary); font-size: 0.8rem;">Find in browser dev tools if your league is private</small>
+            </div>
+
+            <div class="form-group">
+                <label for="swid">SWID Cookie (Private Leagues)</label>
+                <input type="password" id="swid" placeholder="Optional - for private leagues">
+            </div>
+
+            <button class="btn primary" onclick="connectToESPN()" id="connectBtn">
+                Connect to ESPN League
+            </button>
+
+            <div class="status-message hidden" id="connectionStatus"></div>
+        </div>
+
+        <!-- League Setup Screen -->
+        <div class="setup-screen" id="leagueSetupScreen">
+            <h2 style="margin-bottom: 2rem; text-align: center; color: var(--dolphins-orange);">League Setup</h2>
+            
+            <div class="form-group">
+                <label for="leagueSize">League Size</label>
+                <select id="leagueSize" onchange="updateTeamInputs()">
+                    <option value="10">10 Teams</option>
+                    <option value="12">12 Teams</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="myDraftPosition">My Draft Position</label>
+                <select id="myDraftPosition">
+                    <option value="1">1st Pick</option>
+                    <option value="2">2nd Pick</option>
+                    <option value="3">3rd Pick</option>
+                    <option value="4">4th Pick</option>
+                    <option value="5">5th Pick</option>
+                    <option value="6">6th Pick</option>
+                    <option value="7">7th Pick</option>
+                    <option value="8">8th Pick</option>
+                    <option value="9">9th Pick</option>
+                    <option value="10">10th Pick</option>
+                    <option value="11">11th Pick</option>
+                    <option value="12">12th Pick</option>
+                </select>
+            </div>
+
+            <h3 style="margin: 2rem 0 1rem 0; color: var(--dolphins-aqua);">Team Names & Draft Order</h3>
+            <div class="team-setup" id="teamSetup">
+                <!-- Team inputs will be generated here -->
+            </div>
+
+            <div style="margin-top: 2rem; display: flex; gap: 1rem; justify-content: center;">
+                <button class="btn secondary" onclick="goToConnection()">Back</button>
+                <button class="btn primary" onclick="saveLeagueSetup()">Start Draft</button>
+            </div>
+        </div>
+
+        <!-- Main Draft Interface -->
+        <div class="draft-interface" id="draftInterface">
+            <div class="draft-controls">
+                <div class="draft-status">
+                    <div class="current-pick" id="currentPick">Round 1, Pick 1</div>
+                    <div class="current-team" id="currentTeam">Team Name is picking...</div>
+                </div>
+                <div class="timer-controls">
+                    <div class="timer" id="timer">2:00</div>
+                    <button class="btn secondary" onclick="pauseTimer()" id="pauseBtn">Pause</button>
+                    <button class="btn" onclick="restartTimer()">Restart</button>
+                    <button class="btn primary" onclick="nextPick()" style="margin-left: 0.5rem;">Next Pick</button>
+                </div>
+                <button class="btn" onclick="resetDraft()" style="background: var(--dolphins-orange); border-color: var(--dolphins-orange); padding: 0.5rem 1rem; font-size: 0.9rem;">🗑️ New</button>
+            </div>
+
+            <div class="main-content">
+                <!-- Top section with 3 columns -->
+                <div class="top-section">
+                    <!-- Player Pool -->
+                    <div class="player-pool">
+                        <div class="player-pool-header">
+                            <h3>Player Pool</h3>
+                            <div class="search-container">
+                                <input type="text" class="search-box" id="playerSearch" placeholder="Search players..." oninput="searchPlayers()">
+                            </div>
+                            <div class="position-tabs" id="positionTabs">
+                                <div class="position-tab active" data-position="ALL">All</div>
+                                <div class="position-tab" data-position="1">QB</div>
+                                <div class="position-tab" data-position="2">RB</div>
+                                <div class="position-tab" data-position="3">WR</div>
+                                <div class="position-tab" data-position="4">TE</div>
+                                <div class="position-tab" data-position="5">K</div>
+                                <div class="position-tab" data-position="16">D/ST</div>
+                            </div>
+                        </div>
+                        <div class="players-list" id="playersList">
+                            <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                                Loading players...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI RECOMMENDATIONS PANEL -->
+                    <div class="ai-recommendations">
+                        <div class="ai-header">
+                            <h3>🧠 AI Draft Assistant</h3>
+                            <div class="ai-status" id="aiStatus">Analyzing...</div>
+                        </div>
+                        <div class="ai-content">
+                            <div class="top-picks" id="topPicks">
+                                <!-- AI recommendations will populate here -->
+                            </div>
+                            <div class="draft-insights" id="draftInsights">
+                                <!-- Real-time insights will populate here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- My Team Roster -->
+                    <div class="my-team">
+                        <div class="my-team-header">
+                            <h3>My Team</h3>
+                        </div>
+                        <div class="my-team-content" id="myTeamContent">
+                            <!-- Starting lineup slots -->
+                            <div class="lineup-slot" data-position="QB">
+                                <div class="slot-position">QB</div>
+                                <div class="slot-player empty" id="slot-QB">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="RB1">
+                                <div class="slot-position">RB</div>
+                                <div class="slot-player empty" id="slot-RB1">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="RB2">
+                                <div class="slot-position">RB</div>
+                                <div class="slot-player empty" id="slot-RB2">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="WR1">
+                                <div class="slot-position">WR</div>
+                                <div class="slot-player empty" id="slot-WR1">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="WR2">
+                                <div class="slot-position">WR</div>
+                                <div class="slot-player empty" id="slot-WR2">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="TE">
+                                <div class="slot-position">TE</div>
+                                <div class="slot-player empty" id="slot-TE">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="FLEX">
+                                <div class="slot-position">FLEX</div>
+                                <div class="slot-player empty" id="slot-FLEX">Empty</div>
+                            </div>
+                            <div class="lineup-slot" data-position="DST">
+                                <div class="slot-position">D/ST</div>
+                                <div class="slot-player empty" id="slot-DST">Empty</div>
+                            </div>
+                            
+                            <!-- Bench section -->
+                            <div class="bench-section">
+                                <div class="bench-title">Bench</div>
+                                <div id="benchPlayers">
+                                    <!-- Bench players will be added here -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Draft Board - Bottom section -->
+                <div class="bottom-section">
+                    <div class="draft-board-container">
+                        <div class="draft-board-header">
+                            <h3>Draft Board</h3>
+                        </div>
+                        <div class="draft-board draft-board-with-dolphins">
+                            <div class="draft-grid" id="draftGrid">
+                                <!-- Draft grid will be generated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Draft Complete Overlay -->
+        <div class="draft-complete-overlay" id="draftCompleteOverlay">
+            <div class="draft-complete-modal">
+                <div class="draft-complete-title">🏆 Draft Complete!</div>
+                <div class="draft-complete-message">
+                    Congratulations! Your fantasy draft is now complete.<br>
+                    All 160 picks have been made.
+                </div>
+                <button class="btn primary" onclick="exportDraft()">Export to CSV</button>
+                <button class="btn secondary" onclick="closeDraftComplete()" style="margin-left: 1rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Update header title when league connects
+        function updateHeaderTitle(leagueName) {
+            const headerTitle = document.getElementById('headerTitle');
+            if (leagueName && leagueName.trim()) {
+                headerTitle.textContent = leagueName; // Removed dolphin emoji
+            }
+        }
+
+        // AI RECOMMENDATION ENGINE
+        let aiEngine = {
+            // Position tiers based on 2025 data
+            tiers: {
+                RB: {
+                    elite: ['Christian McCaffrey', 'Saquon Barkley', 'Bijan Robinson'],
+                    tier1: ['Derrick Henry', 'Joe Mixon', 'Kyren Williams', 'Jonathan Taylor'],
+                    tier2: ['Josh Jacobs', 'Breece Hall', 'De\'Von Achane', 'James Conner'],
+                    tier3: ['Aaron Jones', 'Rachaad White', 'Tony Pollard', 'Najee Harris']
+                },
+                WR: {
+                    elite: ['CeeDee Lamb', 'Tyreek Hill', 'Amon-Ra St. Brown', 'A.J. Brown'],
+                    tier1: ['Ja\'Marr Chase', 'Justin Jefferson', 'Davante Adams', 'Mike Evans'],
+                    tier2: ['DK Metcalf', 'Amari Cooper', 'DeVonta Smith', 'Tee Higgins'],
+                    tier3: ['Calvin Ridley', 'Diontae Johnson', 'Tyler Lockett', 'Courtland Sutton']
+                },
+                TE: {
+                    elite: ['Travis Kelce', 'Mark Andrews'],
+                    tier1: ['Trey McBride', 'Brock Bowers', 'George Kittle'],
+                    tier2: ['Sam LaPorta', 'Evan Engram', 'Kyle Pitts'],
+                    tier3: ['David Njoku', 'Dallas Goedert', 'Jake Ferguson']
+                },
+                QB: {
+                    elite: ['Josh Allen', 'Lamar Jackson', 'Jalen Hurts', 'Jayden Daniels'],
+                    tier1: ['Joe Burrow', 'Dak Prescott', 'Baker Mayfield', 'Kyler Murray'],
+                    tier2: ['Justin Herbert', 'Tua Tagovailoa', 'Justin Fields', 'Caleb Williams']
+                }
+            },
+
+            // Your specific strategy preferences
+            strategy: {
+                rounds: {
+                    early: [1, 2, 3, 4, 5], // RB/WR focus
+                    teMid: [6, 7, 8], // TE target zone
+                    late: [9, 10, 11, 12, 13, 14, 15, 16] // QB/K/DST
+                },
+                positionalPreference: {
+                    1: ['RB', 'WR'], // Round 1-2: Skill positions only
+                    2: ['RB', 'WR'],
+                    3: ['RB', 'WR'],
+                    4: ['RB', 'WR'],
+                    5: ['RB', 'WR'],
+                    6: ['TE', 'RB', 'WR'], // TE window opens
+                    7: ['TE', 'RB', 'WR'],
+                    8: ['TE', 'RB', 'WR', 'QB'], // Late QB if elite
+                    9: ['QB', 'RB', 'WR'],
+                    10: ['QB', 'RB', 'WR'],
+                    11: ['QB', 'RB', 'WR'],
+                    12: ['QB', 'K', 'D/ST'],
+                    13: ['K', 'D/ST'],
+                    14: ['K', 'D/ST'],
+                    15: ['K', 'D/ST'],
+                    16: ['K', 'D/ST']
+                }
+            },
+
+            // Calculate Value Over Replacement Plus - FIXED
+            calculateVORPlus: function(player, currentRound) {
+                // Debug logging
+                console.log(`Calculating VOR for ${player.name}: Proj=${player.projectedPoints}, Pos=${player.position}, Round=${currentRound}`);
+                
+                const baselines = {
+                    QB: { points: 280, adp: 90 },
+                    RB: { points: 200, adp: 30 },
+                    WR: { points: 180, adp: 35 },
+                    TE: { points: 140, adp: 70 },
+                    K: { points: 120, adp: 150 },
+                    'D/ST': { points: 110, adp: 160 }
+                };
+
+                const baseline = baselines[player.position] || baselines.RB;
+                
+                // Ensure we have valid numbers
+                const projectedPoints = parseFloat(player.projectedPoints) || 0;
+                const playerADP = parseFloat(player.adp) || 999;
+                
+                // For late round players with low projections, use a minimum baseline
+                const adjustedBaseline = Math.min(baseline.points, projectedPoints * 0.5);
+                const rawVOR = Math.max(0, projectedPoints - adjustedBaseline);
+                
+                // ADP value gap (steal detection)
+                const expectedPick = currentRound * 12;
+                let adpMultiplier = 1.0;
+                if (playerADP < 500) {
+                    const adpGap = playerADP - expectedPick;
+                    adpMultiplier = adpGap > 24 ? 0.8 : adpGap > 12 ? 0.9 : adpGap > 0 ? 1.0 : adpGap > -12 ? 1.2 : 1.4;
+                }
+                
+                // Position scarcity multiplier
+                const scarcityMultiplier = this.getScarcityMultiplier(player.position, currentRound);
+                
+                // Early round RB/WR bonus for your strategy
+                let strategyBonus = 1.0;
+                if (currentRound <= 5 && ['RB', 'WR'].includes(player.position)) {
+                    strategyBonus = 1.3; // Your "killers first" preference
+                }
+                
+                const finalVOR = Math.max(0.1, rawVOR * adpMultiplier * scarcityMultiplier * strategyBonus);
+                
+                console.log(`${player.name} VOR: ${rawVOR.toFixed(1)} * ${adpMultiplier.toFixed(1)} * ${scarcityMultiplier.toFixed(1)} * ${strategyBonus.toFixed(1)} = ${finalVOR.toFixed(1)}`);
+                
+                return finalVOR;
+            },
+
+            getScarcityMultiplier: function(position, round) {
+                const multipliers = {
+                    QB: round > 8 ? 1.4 : 0.6, // Heavy late QB boost, early penalty
+                    RB: round <= 3 ? 1.4 : round <= 6 ? 1.2 : round <= 10 ? 1.0 : 0.8, // Early RB priority
+                    WR: round <= 3 ? 1.3 : round <= 6 ? 1.2 : round <= 10 ? 1.0 : 0.8, // Early WR priority  
+                    TE: round >= 6 && round <= 8 ? 1.5 : round > 8 ? 0.7 : 0.8, // TE sweet spot rounds 6-8
+                    K: round > 13 ? 1.0 : 0.1, // Only valuable very late
+                    'D/ST': round > 12 ? 1.0 : 0.1 // Only valuable late
+                };
+                return multipliers[position] || 1.0;
+            },
+
+            // Generate AI recommendations
+            generateRecommendations: function() {
+                const currentRound = appState.currentRound;
+                const availablePlayers = this.getAvailablePlayers();
+                const myRoster = this.getMyCurrentRoster();
+                const rosterNeeds = this.analyzeRosterNeeds(myRoster, currentRound);
+                
+                // Filter out obvious bad picks early - don't even show them
+                const viablePlayers = availablePlayers.filter(player => {
+                    // Filter out K/D/ST in early rounds
+                    if (currentRound <= 12 && ['K', 'D/ST'].includes(player.position)) {
+                        return false;
+                    }
+                    // Filter out QB in very early rounds unless critical need
+                    if (currentRound <= 6 && player.position === 'QB' && rosterNeeds.QB !== 'CRITICAL') {
+                        return false;
+                    }
+                    return true;
+                });
+                
+                // Score all viable players
+                const scoredPlayers = viablePlayers.map(player => {
+                    const vorPlus = this.calculateVORPlus(player, currentRound);
+                    const strategyFit = this.getStrategyFit(player, currentRound, rosterNeeds);
+                    const finalScore = vorPlus * strategyFit;
+                    
+                    return {
+                        ...player,
+                        vorPlus,
+                        strategyFit,
+                        finalScore,
+                        recommendation: this.getRecommendationType(player, currentRound, finalScore, rosterNeeds)
+                    };
+                }).sort((a, b) => b.finalScore - a.finalScore);
+                
+                // Return top 5 VIABLE recommendations only
+                return scoredPlayers.slice(0, 5);
+            },
+
+            getAvailablePlayers: function() {
+                return appState.currentPlayers.filter(player => {
+                    return !appState.draftPicks.some(pick => pick.playerId === player.id);
+                });
+            },
+
+            getMyCurrentRoster: function() {
+                const teamCount = appState.leagueSetup.size;
+                const myDraftPosition = appState.leagueSetup.myDraftPosition;
+                
+                return appState.draftPicks.filter(pick => {
+                    const pickTeamIndex = this.getPickTeamIndex(pick.overallPick, teamCount);
+                    return pickTeamIndex === myDraftPosition;
+                });
+            },
+
+            getPickTeamIndex: function(overallPick, teamCount) {
+                const round = Math.ceil(overallPick / teamCount);
+                const pickInRound = ((overallPick - 1) % teamCount) + 1;
+                const isSnakeRound = round % 2 === 0;
+                
+                return isSnakeRound ? teamCount - pickInRound : pickInRound - 1;
+            },
+
+            analyzeRosterNeeds: function(roster, currentRound) {
+                const positionCounts = { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, 'D/ST': 0 };
+                
+                roster.forEach(pick => {
+                    const player = appState.currentPlayers.find(p => p.id === pick.playerId);
+                    if (player) {
+                        positionCounts[player.position] = (positionCounts[player.position] || 0) + 1;
+                    }
+                });
+                
+                console.log(`🏈 MY ROSTER ANALYSIS: QB:${positionCounts.QB}, RB:${positionCounts.RB}, WR:${positionCounts.WR}, TE:${positionCounts.TE}, K:${positionCounts.K}, DST:${positionCounts['D/ST']}`);
+                
+                // Standard fantasy lineup: 1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX, 1 K, 1 D/ST
+                // FLEX can be RB/WR/TE, so we need 3+ RB+WR combined for starters
+                const flexEligible = positionCounts.RB + positionCounts.WR + positionCounts.TE;
+                
+                const needs = {
+                    // QB: Need 1 starter + 1 backup
+                    QB: currentRound >= 9 && positionCounts.QB === 0 ? 'HIGH' : 
+                        currentRound >= 12 && positionCounts.QB < 2 ? 'MEDIUM' : 'LOW',
+                    
+                    // RB: Need 2 starters + FLEX eligibility + depth (4-5 total)
+                    RB: positionCounts.RB === 0 ? 'CRITICAL' :
+                        positionCounts.RB === 1 ? 'HIGH' :
+                        positionCounts.RB < 3 ? 'MEDIUM' : 
+                        positionCounts.RB < 5 ? 'LOW' : 'SATISFIED',
+                    
+                    // WR: Need 2 starters + FLEX eligibility + depth (4-5 total)
+                    WR: positionCounts.WR === 0 ? 'CRITICAL' :
+                        positionCounts.WR === 1 ? 'HIGH' :
+                        positionCounts.WR < 3 ? 'MEDIUM' :
+                        positionCounts.WR < 5 ? 'LOW' : 'SATISFIED',
+                    
+                    // TE: Need 1 starter + 1 backup (2 total) - FIXED LOGIC
+                    TE: positionCounts.TE === 0 && currentRound >= 6 && currentRound <= 8 ? 'HIGH' :
+                        positionCounts.TE === 0 && currentRound > 8 ? 'MEDIUM' :
+                        positionCounts.TE === 1 && currentRound > 10 ? 'LOW' : 
+                        positionCounts.TE >= 2 ? 'SATISFIED' : 'LOW',
+                    
+                    // K & D/ST: Need 1 each, draft late
+                    K: currentRound >= 14 && positionCounts.K === 0 ? 'HIGH' : 
+                       positionCounts.K >= 1 ? 'SATISFIED' : 'LOW',
+                    'D/ST': currentRound >= 13 && positionCounts['D/ST'] === 0 ? 'HIGH' : 
+                            positionCounts['D/ST'] >= 1 ? 'SATISFIED' : 'LOW'
+                };
+                
+                // FLEX consideration: If we have < 3 RB+WR+TE, prioritize skill positions
+                if (flexEligible < 3 && currentRound <= 8) {
+                    if (positionCounts.RB < positionCounts.WR) {
+                        needs.RB = 'HIGH';
+                    } else {
+                        needs.WR = 'HIGH';
+                    }
+                }
+                
+                console.log(`🎯 NEEDS ANALYSIS:`, needs);
+                
+                return needs;
+            },
+
+            getStrategyFit: function(player, currentRound, rosterNeeds) {
+                let fit = 1.0;
+                
+                // Position strategy fit
+                const preferredPositions = this.strategy.positionalPreference[Math.min(currentRound, 16)] || [];
+                if (preferredPositions.includes(player.position)) {
+                    fit *= 1.3;
+                } else if (!preferredPositions.includes(player.position)) {
+                    fit *= 0.6;
+                }
+                
+                // Roster need multiplier - updated for actual fantasy lineup
+                const needMultipliers = { 
+                    CRITICAL: 2.0,  // Must fill this position NOW
+                    HIGH: 1.4, 
+                    MEDIUM: 1.1, 
+                    LOW: 0.9,
+                    SATISFIED: 0.7
+                };
+                fit *= needMultipliers[rosterNeeds[player.position]] || 1.0;
+                
+                // TE strategy bonus (rounds 6-8) - your sweet spot
+                if (player.position === 'TE' && currentRound >= 6 && currentRound <= 8) {
+                    fit *= 1.6; // Even higher bonus for your TE preference
+                }
+                
+                // FLEX value bonus - RB/WR/TE all fill FLEX
+                if (['RB', 'WR', 'TE'].includes(player.position) && currentRound <= 10) {
+                    fit *= 1.1; // Slight bonus for FLEX eligibility
+                }
+                
+                // Early round skill position bonus (your strategy)
+                if (['RB', 'WR'].includes(player.position) && currentRound <= 5) {
+                    fit *= 1.2; // Matches your "killers first" approach
+                }
+                
+                return fit;
+            },
+
+            getRecommendationType: function(player, currentRound, finalScore, rosterNeeds) {
+                const need = rosterNeeds[player.position];
+                
+                // CRITICAL need - must fill position NOW
+                if (need === 'CRITICAL') {
+                    return {
+                        type: 'must-draft',
+                        label: 'CRITICAL NEED',
+                        reason: `Must fill ${player.position} - you have ZERO at this position!`
+                    };
+                }
+                
+                // Must draft: High VOR+ and strategy fit, or high need
+                if ((finalScore > 50 && need === 'HIGH') || finalScore > 80) {
+                    return {
+                        type: 'must-draft',
+                        label: 'MUST DRAFT',
+                        reason: finalScore > 80 ? `Elite value for Round ${currentRound}!` : 
+                               `Perfect ${player.position} value to fill lineup need`
+                    };
+                }
+                
+                // Good value: Above average VOR+ or filling important need
+                if (finalScore > 25 || ['HIGH', 'MEDIUM'].includes(need)) {
+                    let reason = '';
+                    if (finalScore > 25 && need === 'HIGH') {
+                        reason = `Great value + fills ${player.position} need`;
+                    } else if (finalScore > 25) {
+                        reason = 'Excellent value vs ADP';
+                    } else {
+                        reason = `Solid option to fill ${player.position} need`;
+                    }
+                    
+                    return {
+                        type: 'good-value',
+                        label: 'GOOD VALUE',
+                        reason: reason
+                    };
+                }
+                
+                // Since we pre-filtered, everything else is at least decent
+                return {
+                    type: 'good-value',
+                    label: 'SOLID PICK',
+                    reason: `Best available ${player.position} for Round ${currentRound}`
+                };
+            },
+
+            // Generate real-time insights
+            generateInsights: function() {
+                const insights = [];
+                const currentRound = appState.currentRound;
+                const recentPicks = appState.draftPicks.slice(-6);
+                
+                // Position run detection
+                const recentPositions = recentPicks.map(pick => {
+                    const player = appState.currentPlayers.find(p => p.id === pick.playerId);
+                    return player ? player.position : null;
+                }).filter(pos => pos);
+                
+                const positionCounts = {};
+                recentPositions.forEach(pos => {
+                    positionCounts[pos] = (positionCounts[pos] || 0) + 1;
+                });
+                
+                // RB run alert
+                if (positionCounts.RB >= 3) {
+                    insights.push({
+                        type: 'alert',
+                        text: '🚨 RB RUN! Consider grabbing RB depth now'
+                    });
+                }
+                
+                // TE opportunity window
+                if (currentRound >= 6 && currentRound <= 8) {
+                    const availableEliteTEs = this.getAvailablePlayers().filter(p => 
+                        p.position === 'TE' && this.tiers.TE.tier1.includes(p.name)
+                    );
+                    
+                    if (availableEliteTEs.length > 0) {
+                        insights.push({
+                            type: 'opportunity',
+                            text: `🎯 PERFECT TE WINDOW! ${availableEliteTEs[0].name} available`
+                        });
+                    }
+                }
+                
+                // FLEX eligibility insights
+                const myRoster = this.getMyCurrentRoster();
+                const myPositionCounts = { QB: 0, RB: 0, WR: 0, TE: 0, K: 0, 'D/ST': 0 };
+                
+                myRoster.forEach(pick => {
+                    const player = appState.currentPlayers.find(p => p.id === pick.playerId);
+                    if (player) {
+                        myPositionCounts[player.position] = (myPositionCounts[player.position] || 0) + 1;
+                    }
+                });
+                
+                const flexEligible = myPositionCounts.RB + myPositionCounts.WR + myPositionCounts.TE;
+                
+                // FLEX lineup warning
+                if (flexEligible < 3 && currentRound >= 6) {
+                    insights.push({
+                        type: 'alert',
+                        text: `⚠️ LINEUP ALERT: Need ${3 - flexEligible} more RB/WR/TE for full lineup`
+                    });
+                }
+                
+                // Starter position warnings
+                if (myPositionCounts.RB < 2 && currentRound >= 8) {
+                    insights.push({
+                        type: 'alert',
+                        text: `🏃 RB SHORTAGE: Only ${myPositionCounts.RB} RB, need 2+ for lineup`
+                    });
+                }
+                
+                if (myPositionCounts.WR < 2 && currentRound >= 8) {
+                    insights.push({
+                        type: 'alert',
+                        text: `📡 WR SHORTAGE: Only ${myPositionCounts.WR} WR, need 2+ for lineup`
+                    });
+                }
+                const availablePlayers = this.getAvailablePlayers();
+                const steals = availablePlayers.filter(player => {
+                    return player.adp > 0 && (currentRound * 12) > (player.adp + 24);
+                });
+                
+                if (steals.length > 0) {
+                    insights.push({
+                        type: 'opportunity',
+                        text: `💎 STEAL ALERT: ${steals[0].name} fell 2+ rounds!`
+                    });
+                }
+                
+                return insights;
+            }
+        };
+
+        let appState = {
+            connection: null,
+            leagueSetup: null,
+            currentPlayers: [],
+            draftPicks: [],
+            draftTimer: null,
+            timerSeconds: 120,
+            timerPaused: false,
+            currentRound: 1,
+            currentPick: 1,
+            selectedPosition: 'ALL',
+            searchTerm: '',
+            draftComplete: false
+        };
+
+        // Load saved state on page load
+        window.addEventListener('load', loadSavedState);
+
+        function loadSavedState() {
+            const savedState = localStorage.getItem('draftAssistantState');
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    
+                    // Restore connection info
+                    if (state.connection) {
+                        document.getElementById('leagueId').value = state.connection.leagueId || '';
+                        document.getElementById('seasonId').value = state.connection.seasonId || '2025';
+                        document.getElementById('espnS2').value = state.connection.espnS2 || '';
+                        document.getElementById('swid').value = state.connection.swid || '';
+                        appState.connection = state.connection;
+                        
+                        // Update header with league name
+                        if (state.connection.leagueInfo && state.connection.leagueInfo.name) {
+                            updateHeaderTitle(state.connection.leagueInfo.name);
+                        }
+                    }
+                    
+                    // Restore league setup
+                    if (state.leagueSetup) {
+                        appState.leagueSetup = state.leagueSetup;
+                        document.getElementById('leagueSize').value = state.leagueSetup.size;
+                        updateTeamInputs();
+                        
+                        // Restore team names
+                        state.leagueSetup.teams.forEach((team, index) => {
+                            const teamInput = document.querySelector(`input[data-team="${index}"]`);
+                            if (teamInput) teamInput.value = team.name;
+                        });
+                    }
+                    
+                    // Restore draft state
+                    if (state.draftPicks) {
+                        appState.draftPicks = state.draftPicks;
+                        appState.currentRound = state.currentRound || 1;
+                        appState.currentPick = state.currentPick || 1;
+                        appState.draftComplete = state.draftComplete || false;
+                    }
+                    
+                    console.log('✅ State restored from localStorage');
+                } catch (error) {
+                    console.error('⚠ Failed to restore state:', error);
+                }
+            }
+        }
+
+        function saveState() {
+            try {
+                const stateToSave = {
+                    connection: appState.connection,
+                    leagueSetup: appState.leagueSetup,
+                    draftPicks: appState.draftPicks,
+                    currentRound: appState.currentRound,
+                    currentPick: appState.currentPick,
+                    timerSeconds: appState.timerSeconds,
+                    timerPaused: appState.timerPaused,
+                    timerStartTime: appState.timerStartTime,
+                    draftComplete: appState.draftComplete,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('draftAssistantState', JSON.stringify(stateToSave));
+                console.log(`💾 State saved: Round ${appState.currentRound}, Pick ${appState.currentPick}, Timer: ${appState.timerSeconds}s`);
+            } catch (error) {
+                console.error('⚠ Failed to save state:', error);
+            }
+        }
+
+        async function connectToESPN() {
+            const leagueId = document.getElementById('leagueId').value;
+            const seasonId = document.getElementById('seasonId').value;
+            const espnS2 = document.getElementById('espnS2').value;
+            const swid = document.getElementById('swid').value;
+
+            if (!leagueId || !seasonId) {
+                showStatus('Please enter League ID and Season Year', 'error');
+                return;
+            }
+
+            const connectBtn = document.getElementById('connectBtn');
+            connectBtn.disabled = true;
+            connectBtn.innerHTML = '<span class="loading-spinner"></span> Connecting...';
+            showStatus('Connecting to ESPN...', 'loading');
+
+            try {
+                const response = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        leagueId: parseInt(leagueId),
+                        seasonId: parseInt(seasonId),
+                        espnS2: espnS2 || null,
+                        swid: swid || null
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    appState.connection = {
+                        leagueId: parseInt(leagueId),
+                        seasonId: parseInt(seasonId),
+                        espnS2: espnS2,
+                        swid: swid,
+                        leagueInfo: result.league
+                    };
+                    
+                    // Update header with league name
+                    updateHeaderTitle(result.league.name);
+                    
+                    showStatus('✅ Successfully connected to ESPN!', 'success');
+                    
+                    // Check if we already have league setup saved
+                    if (appState.leagueSetup && appState.leagueSetup.size) {
+                        console.log('🚀 League setup exists - skipping to draft interface');
+                        saveState();
+                        
+                        setTimeout(() => {
+                            showScreen('draftInterface');
+                            initializeDraft();
+                        }, 1500);
+                    } else {
+                        // No league setup - go to setup screen
+                        console.log('📋 No league setup - going to setup screen');
+                        setTimeout(() => {
+                            showScreen('leagueSetupScreen');
+                            initializeLeagueSetup();
+                        }, 1500);
+                    }
+                } else {
+                    showStatus(`⚠ ${result.error}`, 'error');
+                }
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                showStatus('⚠ Failed to connect. Check your internet connection.', 'error');
+            } finally {
+                connectBtn.disabled = false;
+                connectBtn.innerHTML = 'Connect to ESPN League';
+            }
+        }
+
+        function initializeLeagueSetup() {
+            const leagueSizeSelect = document.getElementById('leagueSize');
+            const teamCount = appState.connection.leagueInfo.teams || 10;
+            leagueSizeSelect.value = teamCount;
+            updateTeamInputs();
+        }
+
+        function updateTeamInputs() {
+            const leagueSize = parseInt(document.getElementById('leagueSize').value);
+            const teamSetup = document.getElementById('teamSetup');
+            
+            // Update draft position options
+            const draftPosition = document.getElementById('myDraftPosition');
+            const currentValue = draftPosition.value;
+            draftPosition.innerHTML = '';
+            for (let i = 1; i <= leagueSize; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${i}${i === 1 ? 'st' : i === 2 ? 'nd' : i === 3 ? 'rd' : 'th'} Pick`;
+                draftPosition.appendChild(option);
+            }
+            if (currentValue <= leagueSize) {
+                draftPosition.value = currentValue;
+            }
+            
+            teamSetup.innerHTML = '';
+            
+            for (let i = 0; i < leagueSize; i++) {
+                const teamDiv = document.createElement('div');
+                teamDiv.className = 'team-input';
+                teamDiv.innerHTML = `
+                    <div class="football-emoji">🏈</div>
+                    <input type="text" placeholder="Team ${i + 1} Name" data-team="${i}" style="flex: 1;">
+                `;
+                teamSetup.appendChild(teamDiv);
+            }
+        }
+
+        function saveLeagueSetup() {
+            const leagueSize = parseInt(document.getElementById('leagueSize').value);
+            const myDraftPosition = parseInt(document.getElementById('myDraftPosition').value) - 1; // 0-indexed
+            const teams = [];
+            
+            for (let i = 0; i < leagueSize; i++) {
+                const teamInput = document.querySelector(`input[data-team="${i}"]`);
+                
+                teams.push({
+                    id: i,
+                    name: teamInput.value || `Team ${i + 1}`,
+                    draftOrder: i,
+                    isMyTeam: i === myDraftPosition
+                });
+            }
+            
+            appState.leagueSetup = {
+                size: leagueSize,
+                teams: teams,
+                myDraftPosition: myDraftPosition,
+                myTeamId: myDraftPosition
+            };
+            
+            saveState();
+            showScreen('draftInterface');
+            initializeDraft();
+        }
+
+        // FIXED TIMER SYSTEM - These are the corrected functions
+        
+        function clearTimer() {
+            if (appState.draftTimer) {
+                clearInterval(appState.draftTimer);
+                appState.draftTimer = null;
+                console.log(`⏹️ Timer interval cleared`);
+            }
+        }
+
+        function handleTimerExpired() {
+            console.log(`⏰ Time expired for pick ${appState.currentPick} - Timer paused at 0:00`);
+            appState.timerPaused = true;
+            clearTimer(); // Stop the interval when expired
+            
+            const pauseBtn = document.getElementById('pauseBtn');
+            const timer = document.getElementById('timer');
+            
+            if (pauseBtn) pauseBtn.textContent = 'Resume';
+            if (timer) {
+                timer.classList.add('paused');
+                timer.style.background = 'var(--dolphins-orange)';
+                timer.style.animation = 'pulse 1s infinite';
+            }
+        }
+
+        function startTimer() {
+            if (appState.draftComplete) return;
+            
+            // CRITICAL: Always clear any existing timer first
+            clearTimer();
+            
+            // Reset timer state to defaults for new pick
+            if (!appState.timerStartTime) {
+                appState.timerSeconds = 120; // Always start fresh at 2:00
+                appState.timerPaused = false;
+                appState.timerStartTime = Date.now();
+                console.log(`⏰ Timer started fresh for pick ${appState.currentPick}`);
+            }
+            
+            // Update display immediately
+            updateTimerDisplay();
+            
+            // Start the timer interval
+            appState.draftTimer = setInterval(() => {
+                if (!appState.timerPaused && !appState.draftComplete) {
+                    appState.timerSeconds--;
+                    
+                    // Prevent timer from going negative
+                    if (appState.timerSeconds < 0) {
+                        appState.timerSeconds = 0;
+                    }
+                    
+                    updateTimerDisplay();
+                    
+                    // Save state periodically
+                    if (appState.timerSeconds > 0 && appState.timerSeconds % 10 === 0) {
+                        saveState();
+                    }
+                    
+                    // Timer expired
+                    if (appState.timerSeconds <= 0) {
+                        handleTimerExpired();
+                    }
+                }
+            }, 1000);
+            
+            console.log(`▶️ Timer interval started for pick ${appState.currentPick}`);
+        }
+
+        function updateTimerDisplay() {
+            // Ensure timer seconds is never negative
+            if (appState.timerSeconds < 0) {
+                appState.timerSeconds = 0;
+            }
+            
+            const minutes = Math.floor(Math.max(0, appState.timerSeconds) / 60);
+            const seconds = Math.max(0, appState.timerSeconds) % 60;
+            const timerEl = document.getElementById('timer');
+            
+            if (timerEl) {
+                timerEl.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Update colors based on time remaining
+                if (appState.timerPaused) {
+                    timerEl.classList.add('paused');
+                } else {
+                    timerEl.classList.remove('paused');
+                    if (appState.timerSeconds <= 30) {
+                        timerEl.style.background = 'var(--dolphins-orange)';
+                    } else {
+                        timerEl.style.background = 'var(--dolphins-aqua)';
+                    }
+                }
+                
+                // Remove animation if timer is not at 0 or not paused
+                if (appState.timerSeconds > 0 && !appState.timerPaused) {
+                    timerEl.style.animation = '';
+                }
+            }
+        }
+
+        function pauseTimer() {
+            if (appState.draftComplete) return;
+            
+            appState.timerPaused = !appState.timerPaused;
+            const pauseBtn = document.getElementById('pauseBtn');
+            const timer = document.getElementById('timer');
+            
+            if (appState.timerPaused) {
+                pauseBtn.textContent = 'Resume';
+                timer.classList.add('paused');
+                console.log(`⏸️ Timer paused at ${appState.timerSeconds}s`);
+            } else {
+                pauseBtn.textContent = 'Pause';
+                timer.classList.remove('paused');
+                console.log(`▶️ Timer resumed at ${appState.timerSeconds}s`);
+                
+                // If timer was expired (0 seconds) and we're resuming, reset it
+                if (appState.timerSeconds <= 0) {
+                    appState.timerSeconds = 120;
+                    appState.timerStartTime = Date.now();
+                    console.log(`🔄 Timer reset to 2:00 on resume from expired state`);
+                }
+                
+                // Restart interval if needed (in case it was cleared when expired)
+                if (!appState.draftTimer) {
+                    startTimer();
+                }
+            }
+            
+            updateTimerDisplay();
+            saveState();
+        }
+
+        function restartTimer() {
+            if (appState.draftComplete) return;
+            console.log(`🔄 Timer manually restarted for pick ${appState.currentPick}`);
+            resetTimer();
+        }
+
+        function resetTimer() {
+            if (appState.draftComplete) return;
+            
+            console.log(`🔄 Resetting timer for pick ${appState.currentPick}`);
+            
+            // CRITICAL: Clear existing timer first
+            clearTimer();
+            
+            // Reset ALL timer state to defaults
+            appState.timerSeconds = 120;
+            appState.timerStartTime = null; // Clear start time so startTimer sets it fresh
+            appState.timerPaused = false;
+            
+            // Reset UI elements immediately
+            const pauseBtn = document.getElementById('pauseBtn');
+            const timer = document.getElementById('timer');
+            
+            if (pauseBtn) pauseBtn.textContent = 'Pause';
+            if (timer) {
+                timer.classList.remove('paused');
+                timer.style.animation = '';
+                timer.style.background = 'var(--dolphins-aqua)';
+            }
+            
+            // Update display with reset values
+            updateTimerDisplay();
+            
+            console.log(`⏰ Timer state reset - Starting fresh at 2:00`);
+            
+            // Start fresh timer after a brief delay to ensure clean state
+            setTimeout(() => {
+                if (!appState.draftComplete) {
+                    startTimer();
+                }
+            }, 100);
+        }
+
+        async function initializeDraft() {
+            // Load players
+            await loadPlayers();
+            
+            // Generate draft board
+            generateDraftBoard();
+            
+            // Setup position tabs
+            setupPositionTabs();
+            
+            // Initialize AI recommendations
+            updateAIRecommendations();
+            
+            // Update current pick display
+            updateCurrentPick();
+            
+            // Update my team roster display
+            updateMyTeamRoster();
+            
+            // FIXED: Clear any existing timer state and start fresh
+            console.log(`🚀 Initializing draft - clearing timer state`);
+            clearTimer();
+            appState.timerSeconds = 120;
+            appState.timerPaused = false;
+            appState.timerStartTime = null;
+            
+            // Start timer with delay to ensure DOM is ready
+            setTimeout(() => {
+                if (!appState.draftComplete) {
+                    console.log(`⏰ Starting initial timer`);
+                    startTimer();
+                }
+            }, 500);
+        }
+
+        async function loadPlayers() {
+            try {
+                showPlayersLoading();
+                const response = await fetch(`/api/players/${appState.connection.seasonId}`);
+                const players = await response.json();
+
+                if (response.ok && Array.isArray(players)) {
+                    appState.currentPlayers = players;
+                    renderPlayers();
+                    
+                    // Update AI recommendations when players load
+                    updateAIRecommendations();
+                    
+                    console.log(`✅ Loaded ${players.length} players`);
+                } else {
+                    throw new Error('Failed to load players');
+                }
+            } catch (error) {
+                console.error('⚠ Error loading players:', error);
+                showPlayersError();
+            }
+        }
+
+        function generateDraftBoard() {
+            const draftGrid = document.getElementById('draftGrid');
+            const teamCount = appState.leagueSetup.size;
+            const rounds = 16; // Standard fantasy draft rounds
+            
+            // Set CSS custom property for team count
+            draftGrid.style.setProperty('--team-count', teamCount);
+            
+            let html = '<div class="round-header">RD</div>';
+            
+            // Team headers
+            appState.leagueSetup.teams.forEach(team => {
+                html += `<div class="team-header">${team.name.substring(0, 8)}</div>`;
+            });
+            
+            // Draft slots
+            for (let round = 1; round <= rounds; round++) {
+                html += `<div class="round-header">${round}</div>`;
+                
+                for (let pick = 0; pick < teamCount; pick++) {
+                    const isSnakeRound = round % 2 === 0;
+                    const teamIndex = isSnakeRound ? teamCount - 1 - pick : pick;
+                    const overallPick = (round - 1) * teamCount + pick + 1;
+                    const isCurrent = overallPick === appState.currentPick && !appState.draftComplete;
+                    const isMyPick = teamIndex === appState.leagueSetup.myDraftPosition;
+                    
+                    // Check if this slot is filled
+                    const draftedPlayer = appState.draftPicks.find(p => p.overallPick === overallPick);
+                    
+                    let slotClass = 'draft-slot';
+                    if (isCurrent && !draftedPlayer) slotClass += ' current';
+                    if (draftedPlayer) slotClass += ' filled';
+                    if (isMyPick) slotClass += ' my-pick';
+                    
+                    html += `<div class="${slotClass}" data-round="${round}" data-pick="${pick + 1}" data-overall="${overallPick}" data-team="${teamIndex}">`;
+                    
+                    if (draftedPlayer) {
+                        html += `
+                            <div class="player-name">${draftedPlayer.playerName}</div>
+                            <div class="player-details">${draftedPlayer.position} - ${draftedPlayer.team}</div>
+                        `;
+                    } else {
+                        html += `<div style="font-size: 0.7rem; color: var(--text-secondary);">${overallPick}</div>`;
+                    }
+                    
+                    html += '</div>';
+                }
+            }
+            
+            draftGrid.innerHTML = html;
+        }
+
+        function setupPositionTabs() {
+            const tabs = document.querySelectorAll('.position-tab');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    appState.selectedPosition = tab.dataset.position;
+                    renderPlayers();
+                });
+            });
+        }
+
+        function renderPlayers() {
+            const playersList = document.getElementById('playersList');
+            
+            if (!appState.currentPlayers || appState.currentPlayers.length === 0) {
+                playersList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No players loaded</div>';
+                return;
+            }
+            
+            let filteredPlayers = appState.currentPlayers.filter(player => {
+                // Position filter
+                if (appState.selectedPosition !== 'ALL' && player.positionId.toString() !== appState.selectedPosition) {
+                    return false;
+                }
+                
+                // Search filter
+                if (appState.searchTerm) {
+                    const searchLower = appState.searchTerm.toLowerCase();
+                    if (!player.name.toLowerCase().includes(searchLower) && 
+                        !player.team.toLowerCase().includes(searchLower)) {
+                        return false;
+                    }
+                }
+                
+                // Hide drafted players
+                const isDrafted = appState.draftPicks.some(pick => pick.playerId === player.id);
+                return !isDrafted;
+            });
+            
+            // Sort by ADP
+            filteredPlayers.sort((a, b) => {
+                if (a.hasRealADP && b.hasRealADP) return a.adp - b.adp;
+                if (a.hasRealADP && !b.hasRealADP) return -1;
+                if (!a.hasRealADP && b.hasRealADP) return 1;
+                return b.ownership - a.ownership;
+            });
+            
+            const html = filteredPlayers.map(player => {
+                const isDisabled = appState.draftComplete;
+                return `
+                    <div class="player-card" data-player-id="${player.id}">
+                        <div class="player-card-header">
+                            <div class="player-info">
+                                ${player.name} <span style="color: var(--dolphins-orange);">${player.team} - ${player.position}</span>
+                            </div>
+                            <button class="draft-player-btn" onclick="draftPlayer(${player.id})" ${isDisabled ? 'disabled' : ''}>
+                                ${isDisabled ? 'Draft Complete' : 'Draft'}
+                            </button>
+                        </div>
+                        <div class="player-stats">
+                            ADP: ${player.adp !== 999 ? player.adp.toFixed(1) : 'N/A'} | 
+                            Projected: ${player.projectedPoints.toFixed(1)} pts | 
+                            Owned: ${player.ownership.toFixed(1)}%
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            playersList.innerHTML = html || '<div style="text-align: center; padding: 2rem; color: var(--text-secondary);">No players found</div>';
+        }
+
+        function searchPlayers() {
+            appState.searchTerm = document.getElementById('playerSearch').value;
+            renderPlayers();
+        }
+
+        // UPDATED draftPlayer function with fixed timer reset
+        function draftPlayer(playerId) {
+            // Prevent drafting if draft is complete
+            if (appState.draftComplete) {
+                alert('Draft is complete! No more picks can be made.');
+                return;
+            }
+
+            const player = appState.currentPlayers.find(p => p.id === playerId);
+            if (!player) return;
+            
+            // Calculate current team and overall pick using SNAKE DRAFT logic
+            const teamCount = appState.leagueSetup.size;
+            const currentRound = appState.currentRound;
+            const isSnakeRound = currentRound % 2 === 0;
+            
+            let teamIndex;
+            if (isSnakeRound) {
+                // Snake rounds go in reverse order
+                teamIndex = teamCount - ((appState.currentPick - 1) % teamCount) - 1;
+            } else {
+                // Regular rounds go in normal order
+                teamIndex = (appState.currentPick - 1) % teamCount;
+            }
+            
+            const overallPick = appState.currentPick;
+            const draftingTeam = appState.leagueSetup.teams[teamIndex];
+            
+            // Add to draft picks
+            const draftPick = {
+                playerId: player.id,
+                playerName: player.name,
+                position: player.position,
+                team: player.team,
+                overallPick: overallPick,
+                round: currentRound,
+                teamId: draftingTeam.id,
+                teamName: draftingTeam.name,
+                timestamp: new Date().toISOString()
+            };
+            
+            appState.draftPicks.push(draftPick);
+            
+            // Update UI first
+            saveState();
+            generateDraftBoard();
+            renderPlayers();
+            updateMyTeamRoster();
+            updateAIRecommendations();
+            
+            // Move to next pick
+            appState.currentPick++;
+            
+            // Check if round/draft complete
+            if (appState.currentPick > appState.currentRound * appState.leagueSetup.size) {
+                appState.currentRound++;
+                if (appState.currentRound > 16) {
+                    appState.draftComplete = true;
+                    clearTimer(); // Clear timer when draft complete
+                    setTimeout(() => {
+                        showDraftComplete();
+                        saveState();
+                    }, 100);
+                    return;
+                }
+            }
+            
+            // Update current pick display
+            updateCurrentPick();
+            
+            // FIXED: Reset timer properly for next pick
+            console.log(`🏈 Player drafted: ${player.name}. Resetting timer for next pick.`);
+            resetTimer();
+        }
+
+        function updateCurrentPick() {
+            if (appState.draftComplete) {
+                document.getElementById('currentPick').textContent = 'Draft Complete!';
+                document.getElementById('currentTeam').textContent = 'All 160 picks have been made.';
+                return;
+            }
+
+            const teamCount = appState.leagueSetup.size;
+            const currentRound = appState.currentRound;
+            const overallPick = appState.currentPick;
+            const isSnakeRound = currentRound % 2 === 0;
+            const pickInRound = ((overallPick - 1) % teamCount) + 1;
+            
+            let teamIndex;
+            if (isSnakeRound) {
+                teamIndex = teamCount - pickInRound;
+            } else {
+                teamIndex = pickInRound - 1;
+            }
+            
+            const currentTeam = appState.leagueSetup.teams[teamIndex];
+            
+            document.getElementById('currentPick').textContent = 
+                `Round ${currentRound}, Pick ${pickInRound} (Overall: ${overallPick})`;
+            document.getElementById('currentTeam').textContent = 
+                `${currentTeam.name} is picking...`;
+        }
+
+        // Update My Team Roster Display
+        function updateMyTeamRoster() {
+            const myRoster = aiEngine.getMyCurrentRoster();
+            const myPlayers = myRoster.map(pick => {
+                const player = appState.currentPlayers.find(p => p.id === pick.playerId);
+                return {
+                    ...pick,
+                    player: player
+                };
+            }).filter(p => p.player);
+
+            // Sort by draft order
+            myPlayers.sort((a, b) => a.overallPick - b.overallPick);
+
+            // Clear all slots first
+            ['QB', 'RB1', 'RB2', 'WR1', 'WR2', 'TE', 'FLEX', 'DST'].forEach(slotId => {
+                const slot = document.getElementById(`slot-${slotId}`);
+                if (slot) {
+                    slot.textContent = 'Empty';
+                    slot.className = 'slot-player empty';
+                    slot.parentElement.classList.remove('filled');
+                }
+            });
+
+            // Position counters for auto-assignment
+            const positionCounts = { QB: 0, RB: 0, WR: 0, TE: 0, 'D/ST': 0 };
+            const benchPlayers = [];
+
+            // Assign players to roster spots
+            myPlayers.forEach(pick => {
+                const player = pick.player;
+                const position = player.position;
+                
+                let assigned = false;
+
+                // Auto-assign to starting lineup based on position and availability
+                if (position === 'QB' && positionCounts.QB === 0) {
+                    assignToSlot('QB', player, pick);
+                    positionCounts.QB++;
+                    assigned = true;
+                } else if (position === 'RB') {
+                    if (positionCounts.RB === 0) {
+                        assignToSlot('RB1', player, pick);
+                        positionCounts.RB++;
+                        assigned = true;
+                    } else if (positionCounts.RB === 1) {
+                        assignToSlot('RB2', player, pick);
+                        positionCounts.RB++;
+                        assigned = true;
+                    }
+                } else if (position === 'WR') {
+                    if (positionCounts.WR === 0) {
+                        assignToSlot('WR1', player, pick);
+                        positionCounts.WR++;
+                        assigned = true;
+                    } else if (positionCounts.WR === 1) {
+                        assignToSlot('WR2', player, pick);
+                        positionCounts.WR++;
+                        assigned = true;
+                    }
+                } else if (position === 'TE' && positionCounts.TE === 0) {
+                    assignToSlot('TE', player, pick);
+                    positionCounts.TE++;
+                    assigned = true;
+                } else if (position === 'D/ST' && positionCounts['D/ST'] === 0) {
+                    assignToSlot('DST', player, pick);
+                    positionCounts['D/ST']++;
+                    assigned = true;
+                }
+
+                // If not assigned to starting lineup, check FLEX
+                if (!assigned && ['RB', 'WR', 'TE'].includes(position)) {
+                    const flexSlot = document.getElementById('slot-FLEX');
+                    if (flexSlot && flexSlot.textContent === 'Empty') {
+                        assignToSlot('FLEX', player, pick);
+                        assigned = true;
+                    }
+                }
+
+                // If still not assigned, add to bench
+                if (!assigned) {
+                    benchPlayers.push({ player, pick });
+                }
+            });
+
+            // Update bench
+            const benchContainer = document.getElementById('benchPlayers');
+            if (benchPlayers.length === 0) {
+                benchContainer.innerHTML = '<div style="color: var(--text-secondary); font-style: italic;">No bench players</div>';
+            } else {
+                benchContainer.innerHTML = benchPlayers.map(({ player, pick }) => `
+                    <div class="bench-player">
+                        <strong>${player.name}</strong> (${player.position} - ${player.team})
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Round ${pick.round}, Pick ${pick.overallPick}</div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function assignToSlot(slotId, player, pick) {
+            const slot = document.getElementById(`slot-${slotId}`);
+            if (slot) {
+                slot.innerHTML = `
+                    <strong>${player.name}</strong><br>
+                    <small>${player.position} - ${player.team}</small>
+                `;
+                slot.className = 'slot-player filled';
+                slot.parentElement.classList.add('filled');
+            }
+        }
+
+        // UPDATED nextPick function with fixed timer reset
+        function nextPick() {
+            if (appState.draftComplete) {
+                alert('Draft is already complete!');
+                return;
+            }
+            
+            console.log(`➡️ Manually advancing to next pick`);
+            
+            // Move to next pick
+            appState.currentPick++;
+            if (appState.currentPick > appState.currentRound * appState.leagueSetup.size) {
+                appState.currentRound++;
+                if (appState.currentRound > 16) {
+                    appState.draftComplete = true;
+                    clearTimer();
+                    showDraftComplete();
+                    saveState();
+                    return;
+                }
+            }
+            
+            // Update UI
+            updateCurrentPick();
+            generateDraftBoard();
+            updateAIRecommendations();
+            
+            // FIXED: Reset timer for next pick
+            resetTimer();
+            
+            // Save state
+            saveState();
+            
+            console.log(`✅ Advanced to Round ${appState.currentRound}, Pick ${appState.currentPick}`);
+        }
+
+        // Show Draft Complete Modal
+        function showDraftComplete() {
+            const overlay = document.getElementById('draftCompleteOverlay');
+            overlay.style.display = 'flex';
+            
+            // Disable all draft buttons
+            const draftButtons = document.querySelectorAll('.draft-player-btn');
+            draftButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'Draft Complete';
+            });
+            
+            // Disable timer controls
+            document.getElementById('pauseBtn').disabled = true;
+            document.querySelector('button[onclick="restartTimer()"]').disabled = true;
+            document.querySelector('button[onclick="nextPick()"]').disabled = true;
+            
+            console.log('🏆 Draft completed! All 160 picks made.');
+        }
+
+        function closeDraftComplete() {
+            const overlay = document.getElementById('draftCompleteOverlay');
+            overlay.style.display = 'none';
+        }
+
+        function showScreen(screenId) {
+            document.querySelectorAll('.setup-screen, .draft-interface').forEach(screen => {
+                screen.classList.remove('active');
+            });
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function goToConnection() {
+            showScreen('connectionScreen');
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('connectionStatus');
+            status.className = `status-message status-${type}`;
+            status.textContent = message;
+            status.classList.remove('hidden');
+            
+            if (type === 'success') {
+                setTimeout(() => status.classList.add('hidden'), 3000);
+            }
+        }
+
+        function showPlayersLoading() {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--text-secondary);">
+                    <div class="loading-spinner" style="margin: 0 auto 1rem;"></div>
+                    Loading players from ESPN...
+                </div>
+            `;
+        }
+
+        function showPlayersError() {
+            const playersList = document.getElementById('playersList');
+            playersList.innerHTML = `
+                <div style="text-align: center; padding: 2rem; color: var(--dolphins-orange);">
+                    <p>⚠ Failed to load players</p>
+                    <button class="btn primary" onclick="loadPlayers()" style="margin-top: 1rem;">
+                        Retry Loading
+                    </button>
+                </div>
+            `;
+        }
+
+        // Update AI recommendations
+        function updateAIRecommendations() {
+            if (!appState.currentPlayers.length || appState.draftComplete) return;
+            
+            try {
+                const recommendations = aiEngine.generateRecommendations();
+                const insights = aiEngine.generateInsights();
+                
+                renderAIRecommendations(recommendations);
+                renderAIInsights(insights);
+                
+                document.getElementById('aiStatus').textContent = 'Active';
+            } catch (error) {
+                console.error('AI recommendation error:', error);
+                document.getElementById('aiStatus').textContent = 'Error';
+            }
+        }
+
+        function renderAIRecommendations(recommendations) {
+            const topPicks = document.getElementById('topPicks');
+            
+            if (appState.draftComplete) {
+                topPicks.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">Draft Complete!</div>';
+                return;
+            }
+            
+            if (!recommendations.length) {
+                topPicks.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">No recommendations available</div>';
+                return;
+            }
+            
+            const html = recommendations.map(player => `
+                <div class="ai-pick ${player.recommendation.type}" onclick="draftPlayer(${player.id})" data-player-id="${player.id}">
+                    <div class="ai-pick-header">
+                        <div class="ai-pick-name">${player.name} (${player.team} ${player.position})</div>
+                        <div class="ai-pick-badge ${player.recommendation.type}">${player.recommendation.label}</div>
+                    </div>
+                    <div class="ai-pick-reason">${player.recommendation.reason}</div>
+                    <div class="ai-pick-stats">
+                        ADP: ${player.adp !== 999 ? player.adp.toFixed(1) : 'N/A'} | 
+                        Proj: ${player.projectedPoints.toFixed(1)} | 
+                        VOR+: ${(player.vorPlus || 0).toFixed(1)}
+                    </div>
+                </div>
+            `).join('');
+            
+            topPicks.innerHTML = html;
+        }
+
+        function renderAIInsights(insights) {
+            const draftInsights = document.getElementById('draftInsights');
+            
+            if (appState.draftComplete) {
+                draftInsights.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center;">Draft analysis complete!</div>';
+                return;
+            }
+            
+            if (!insights.length) {
+                draftInsights.innerHTML = '<div style="font-size: 0.8rem; color: var(--text-secondary); text-align: center;">Monitoring draft trends...</div>';
+                return;
+            }
+            
+            const html = insights.map(insight => `
+                <div class="insight-item ${insight.type}">
+                    ${insight.text}
+                </div>
+            `).join('');
+            
+            draftInsights.innerHTML = html;
+        }
+
+        // Export draft data to CSV
+        function exportDraft() {
+            // Create CSV headers
+            const headers = [
+                'Overall Pick',
+                'Round',
+                'Pick in Round', 
+                'Team',
+                'Player Name',
+                'Position',
+                'NFL Team',
+                'Timestamp'
+            ];
+            
+            // Create CSV rows
+            const rows = appState.draftPicks.map(pick => {
+                const round = pick.round;
+                const teamCount = appState.leagueSetup.size;
+                const pickInRound = ((pick.overallPick - 1) % teamCount) + 1;
+                
+                return [
+                    pick.overallPick,
+                    round,
+                    pickInRound,
+                    `"${pick.teamName}"`, // Wrap in quotes in case team name has commas
+                    `"${pick.playerName}"`,
+                    pick.position,
+                    pick.team,
+                    new Date(pick.timestamp).toLocaleString()
+                ];
+            });
+            
+            // Combine headers and rows
+            const csvContent = [
+                headers.join(','),
+                ...rows.map(row => row.join(','))
+            ].join('\n');
+            
+            // Create and download file
+            const dataBlob = new Blob([csvContent], {type: 'text/csv'});
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(dataBlob);
+            link.download = `fantasy_draft_${appState.connection.seasonId}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            
+            console.log('Draft exported to CSV successfully!');
+        }
+
+        function resetDraft() {
+            if (confirm('🗑️ Are you sure you want to start a completely new draft? This will clear all current progress.')) {
+                console.log('🗑️ Clearing all draft data...');
+                
+                // Clear localStorage completely
+                localStorage.removeItem('draftAssistantState');
+                
+                // Reset all app state
+                appState = {
+                    connection: null,
+                    leagueSetup: null,
+                    currentPlayers: [],
+                    draftPicks: [],
+                    draftTimer: null,
+                    timerSeconds: 120,
+                    timerPaused: false,
+                    currentRound: 1,
+                    currentPick: 1,
+                    selectedPosition: 'ALL',
+                    searchTerm: '',
+                    draftComplete: false
+                };
+                
+                // Clear timer
+                if (appState.draftTimer) {
+                    clearInterval(appState.draftTimer);
+                    appState.draftTimer = null;
+                }
+                
+                // Reset timer state
+                appState.timerSeconds = 120;
+                appState.timerPaused = false;
+                appState.timerStartTime = null;
+                
+                // Reset form fields
+                document.getElementById('leagueId').value = '';
+                document.getElementById('seasonId').value = '2025';
+                document.getElementById('espnS2').value = '';
+                document.getElementById('swid').value = '';
+                
+                // Reset header title
+                document.getElementById('headerTitle').textContent = 'Fantasy Draft Assistant';
+                
+                // Hide draft complete overlay if showing
+                document.getElementById('draftCompleteOverlay').style.display = 'none';
+                
+                // Go back to connection screen
+                showScreen('connectionScreen');
+                
+                console.log('✅ Draft session completely reset');
+                alert('✅ New draft session started! You can now set up a fresh draft.');
+            }
+        }
+
+        // Keyboard shortcuts for power users
+        document.addEventListener('keydown', (e) => {
+            if (e.key === ' ' && e.ctrlKey) {
+                e.preventDefault();
+                pauseTimer();
+            }
+            if (e.key === 'r' && e.ctrlKey) {
+                e.preventDefault();
+                restartTimer();
+            }
+            // Secret reset combo: Ctrl+Shift+R
+            if (e.key === 'R' && e.ctrlKey && e.shiftKey) {
+                e.preventDefault();
+                resetDraft();
+            }
+        });
+
+        // Auto-save every 30 seconds
+        setInterval(saveState, 30000);
+
+        // Save state before page unload
+        window.addEventListener('beforeunload', saveState);
+    </script>
+</body>
+</html>
